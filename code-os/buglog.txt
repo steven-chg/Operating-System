@@ -1,0 +1,182 @@
+Problem: When included paging, it starts rebooting continously
+Symptom: After it automatically reboots, the system reboots again and keeps on looping
+Difficulty Finding Bug: hard(4 hrs)
+Difficulty Fix: multi-line change
+Fix: We figured out that we didn't set the present of b8 index for table entry to 1. Also,
+instead of using uint8_t for declaring variables with 1 bit inside the paging structure,
+we use uint32_t instead, which fixed the problem.
+
+Problem: After enabling interrupt, we ran into exception vector number 9, coprocessor segment overrun
+Symptom: Typing any key on the keyboard results in exception printing vector number 9, coprocessor segment overrun
+Difficulty Finding Bug: normal (20mins)
+Difficulty Fix: multi-line fix
+Fix: the ICW1 is not send to the correct port of the PIC, and the EOI is not send to the correct port on the PIC as well
+
+Problem: Running into exception vector 14, page fault exception
+Symptom: Typing keys on the keyboard result in exception printing vector number 14, page fault exception 
+Difficulty Finding Bug: 30 mins
+Difficulty Fix: multi-line fix
+Fix: Set the user_supervisor for page directory entry to 1 and read_write to 1 for user to read and write
+ 
+Problem: IRQ not able to enable 
+Symptom: keyboard not responding
+Fix: masks all of the IRQ first with 0xFF
+Difficulty Finding Bug: easy (10 mins)
+Difficulty Fix: easy, one line fix
+
+/ Checkpoint 2 Bugs /
+
+Problem: Page fault exception when testing file system
+Symptom: Test cases not running; screen displays vector number 14, page fault exception 
+Difficulty Finding Bug: 30 mins
+Difficulty Fix: single-line fix
+Fix: I forgot to set the global variable pointer to the file system within the kernel.c file; hence, I was likely accessing
+undefined addresses when I used the file system pointer to define my boot block pointer and the entire file system.
+The fix was simply to set the file system pointer accordingly to the start of module. 
+
+Problem: Failing read_dentry_by_name tests
+Symptom: Failing tests on reading dentry by name for valid file names
+Difficulty Finding Bug: 20 mins
+Difficulty Fix: multi-line fix
+Fix: The issue had to do with the way the test case was written. Instead of checking the return value of call to 
+read_dentry_by_name, we also checked the file_name in the dentry struct returned, albeit in the incorrect way without using
+strncmp, which was why it never passed the check and hence failed. We modified the test case to print the file name instead, 
+which fixed the issue and also confirmed our function was operating correctly.
+
+Problem: Failure to set putc to account for special cases of keyboard characters
+Symptom: When backspace and/or tab was pressed, random characters were print on screen, instead of its proper function
+Difficulty Finding Bug: 4 hours
+Difficulty Fix: multi-line fix
+Fix: In lib.c, we failed to modify putc to handle special cases like tab and backspace, which resulted in weird characters
+being print on screen. We simply handled the case for tab to print four spaces and backspace to erase from video memory.
+
+Problem: Lack of assembly linkage for rtc
+Symptom: After removing our test case using a while loop to call our rtc_handler, the RTC was not interrupting constantly 
+at the specified frequency.
+Difficulty Finding Bug: 8 hours
+Difficulty Fix: multi-line fix
+Fix: We were able to fix this issue by adding assembly linkage for the rtc as noted per past discussion.
+
+Problem: Failure to update cursor after clear() screen.
+Symptom: Our test case printing results were not starting out at the top left corner of the screen.
+Difficulty Finding Bug: 30 mins
+Difficulty Fix: multi-line change
+Fix: We were able to fix the bug by updating the cursor to be at the top left corner again after calling clear() 
+to clear the screen display. 
+
+Problem: Lack of assembly linkage for keyboard
+Symptom: Ocassionally run into vector number 14 page fault when typing on keyboard.
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: multi-line fix
+Fix: We were able to fix the bug by adding assembly linkage for the keyboard handler as noted per past discussion.
+
+Problem: Fail to handle backspace in terminal
+Symptom: Terminal write prints characters that were previously deleted
+Difficulty Finding Bug: 1 hour
+Difficulty Fix: multi-line fix
+Fix: We were able to fix the bug by deleting the buffer in terminal when backspace is pressed.
+
+Problem: Fail to run terminal_read when enter is pressed
+Symptom: When enter is pressed, terminal_read doesn't run
+Difficulty Finding Bug: 1 hour
+Difficulty Fix: single-line fix
+Fix: We were able to fix the bug by declaring the enter stat variable as volatile to allow terminal run to keep reading for changes.
+
+Problem: Fail to read out file data when running tests
+Symptom:Nothing is printed
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: multi-line fix
+Fix: We were able to fix it by changing the pointer and the method used to point to the correct data location
+
+/ Checkpoint 3 Bugs /
+
+Problem: shell not responding no commands
+Symptom: shell appears but cannot execute program
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: multi-line fix
+Fix: created global variables for file operation table
+
+Problem: variable set incorrectly
+Symptom: linux  penguin is flashing
+Difficulty Finding Bug: 15 mins
+Difficulty Fix: one-line fix
+Fix: the value of ADDRESS_8MB is incorrect is 0x800000 instead of 0x80000
+
+Problem: warnning invlid pointer type
+Symptom: warnning when complie
+Difficulty Finding Bug: 15 mins
+Difficulty Fix: one-line fix
+Fix: added int32_t nbytes to rtc_write arg and changed void * buf to const void * buf
+
+Problem: critical section not set up properly
+Symptom: wshell no response to commands
+Difficulty Finding Bug: 60 mins
+Difficulty Fix: one-line fix
+Fix: added sti(); in system call read
+
+Problem: system call asm linkage store register incorrectly
+Symptom: general protection fault
+Difficulty Finding Bug: 45 mins
+Difficulty Fix: multi-line fix
+Fix: reorder the popl and pushl registers
+
+Problem: read and write not checking correct index in file array 
+Symptom: syserr test fail
+Difficulty Finding Bug: 45 mins
+Difficulty Fix: multi-line fix
+Fix: added the filenumber to the array
+
+Problem: did not check empty string in system call open
+Symptom: syserr test fail
+Difficulty Finding Bug: 45 mins
+Difficulty Fix: multi-line fix
+Fix: added if condition in system call open
+
+Problem: incorrect algorithm for read data
+Symptom: page fault flashing in window
+Difficulty Finding Bug: 4 hours
+Difficulty Fix: multi-line fix
+Fix: had to rewrite the algorithm to find the index in the index node to find block number and increment 
+and reset the byte offset when it exceeded the file system block size of 4096 bytes.
+
+/ Checkpoint 4 Bugs /
+
+Problem: Incorrect condition check in terminal write
+Symptom: Only the first line from fram0.txt file prints to the screen when we run cat frame0.txt
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: one-line fix
+Fix: We removed the condition check in terminal write that checked if there is a newline character (if there
+is a newline character, we return and do not continue writing to terminal, hence why we only print the first line).
+
+Problem: Incorrect page directory index
+Symptom: Page fault when we try to cat fish.
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: one-line fix
+Fix: We fixed how we found the page directory index in vidmap to be (128 + 8MB)/4MB.
+
+/ Checkpoint 5 Bugs /
+Problem: Linking to incorrect PCB pointer
+Symptom: page fault when tring to halt after executing
+Difficulty Finding Bug: 4 hours
+Difficulty Fix: one-line fix
+Fix: We found out that we forgot to link terminal PCB pointer to the newly created PCB pointer after execute therefore it 
+would page fault when halting. The error disappeared after we asigned it correctly.
+
+Problem: Not setting the correct index into the keyboard/command buffer
+Symptom: Kept printing the outcome of the same command after running different commands
+Difficulty Finding Bug: 1.5 hours
+Difficulty Fix: one-line fix
+Fix: We were not correctly modifying the index into the keyboard/command buffer of the current terminal.
+
+Problem: Did not send_eoi after switching terminal
+Symptom: Terminal freezes after switching to itself 
+Difficulty Finding Bug: 2 hours
+Difficulty Fix: one-line fix
+Fix: Add send_eoi after calling terminal switch.
+
+Problem: Cannot read the command when switching terminals
+Symptom: When you type "hello" and switch to other terminal and back and press enter, it will show "no such command"
+Difficulty Finding Bug: 1.5 hours
+Difficulty Fix: one-line fix
+Fix: We fixed the bug by deleting a line that modifies the terminal's buffer index
+
